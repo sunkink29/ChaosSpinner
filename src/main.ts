@@ -1,24 +1,23 @@
 import { setTimerCallback, TimerListener } from './timer.ts';
 import { subListener, subGifedListener, massSubGiftedListener, cheerListener, tipListener } from "./eventListener.ts";
 
-const hostname = 'localhost';
-const port = 29763;
 const commandPageSize = 100;
 const commands: {[key: string]: Command} = {};
 
 
-type Route = {[key: string]: (searchParams: URLSearchParams) => void}
+type Route = {[key: string]: (pathname: string[], searchParams: URLSearchParams) => Promise<void | Response>}
 const routes: Route = {
-  '/msg': msgListener,
-  '/timer': TimerListener,
-  '/sub': subListener,
-  '/subGifed': subGifedListener,
-  '/massSubGifted': massSubGiftedListener,
-  '/cheer': cheerListener,
-  '/tip': tipListener,
+  'msg': msgListener,
+  'timer': TimerListener,
+  'sub': subListener,
+  'subGifed': subGifedListener,
+  'massSubGifted': massSubGiftedListener,
+  'cheer': cheerListener,
+  'tip': tipListener,
 }
 
-function msgListener(searchParams: URLSearchParams) {
+// deno-lint-ignore require-await
+async function msgListener(_pathname: string[], searchParams: URLSearchParams) {
   commands['Send Message'].send([searchParams.get('text')??'blank']);
 };
 
@@ -106,16 +105,26 @@ async function ensureMixItUpConnection() {
   }, 1000*60)
 }
 
-function handler(req: Request) {
-  const url = new URL(req.url);
-  url.searchParams
-  const route = routes[url.pathname];
-  if (route) {
-    route(url.searchParams);
-  } else {
-    console.error(`Could not find route ${url.pathname}`);
+async function handleHttp(conn: Deno.Conn) {
+  const httpConn = Deno.serveHttp(conn);
+  for await (const requestEvent of httpConn) {
+    const url = new URL(requestEvent.request.url);
+    const pathname = url.pathname.split('/');
+    pathname.shift();
+    if (pathname[0] === 'favicon.ico') {
+      requestEvent.respondWith( new Response());
+      continue;
+    }
+
+    const route = routes[pathname[0]];
+    let response;
+    if (route) {
+      response = await route(pathname, url.searchParams);
+    } else {
+      console.error(`Could not find route ${url.pathname}`);
+    }
+    await requestEvent.respondWith(response ?? new Response())
   }
-  return new Response();
 }
 
 setTimerCallback((timerDisplay: string) => console.log(timerDisplay));
@@ -126,4 +135,9 @@ ensureMixItUpConnection().then(() => {
     // console.log(commands)
   });
 })
-Deno.serve({port, hostname, handler});
+const server = Deno.listen({ port: 8080 });
+console.log("Listening on http://localhost:8080/");
+
+for await (const conn of server) {
+  handleHttp(conn).catch(console.error);
+}

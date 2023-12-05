@@ -1,5 +1,11 @@
 import { config } from './config.ts';
 
+const files: {[key: string]:string} = {
+  ""          : "widgets/timer/index.html",
+  "style.css" : "widgets/timer/style.css",
+  "main.js"   : "widgets/timer/main.js"
+}
+
 let countDownTimer: number;
 let timerId = 0;
 let autoSaveId = 0;
@@ -10,9 +16,21 @@ export function setTimerCallback(callback: (timerDisplay: string) => void) {
   timerCallback = callback;
 }
 
-export function TimerListener(searchParams: URLSearchParams) {
-  const timerOption = searchParams.get('option')??'start';
-  if (timerOption === 'start') {
+export async function TimerListener(pathname: string[], searchParams: URLSearchParams): Promise<void | Response> {
+  const timerOption = searchParams.get('option');
+  if (timerOption === null) {
+    let file;
+    try {
+      file = await Deno.open(files[pathname[1]], { read: true });
+    } catch {
+      // If the file cannot be opened, return a "404 Not Found" response
+      const notFoundResponse = new Response("404 Not Found", { status: 404 });
+      console.log(`Error: ${pathname[1]} could not be found for timer widget`)
+      return notFoundResponse
+    }
+    return new Response(file.readable);
+
+  } else if (timerOption === 'start') {
     startTimer();
   } else if (timerOption === 'stop') {
     stopTimer();
