@@ -1,0 +1,6 @@
+{
+  "tasks": {
+    "start": "deno run --allow-net --allow-read=./ --allow-write=./ --watch=./src ./src/main.ts",
+    "compile": "deno compile --allow-net --allow-read=./ --allow-write=./ --output MixItUpTimer.exe ./src/main.ts"
+  }
+}

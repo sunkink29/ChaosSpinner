@@ -1,0 +1,10 @@
+{
+  "subTime": 5,
+  "bitMinimum": 100,
+  "bitTime": 5,
+  "tipMinimum": 5,
+  "tipTime": 5,
+  "maxDuration": 300,
+  "initialDuration": 1,
+  "timerAutoSaveFreq": 5
+}
