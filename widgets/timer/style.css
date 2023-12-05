@@ -1,0 +1,46 @@
+p{
+  font-family: 'Roboto', sans-serif;
+  color: #0000FF; 
+  font-weight:bold;
+  margin:0px;
+  padding:10px;
+}
+
+h1{
+  font-family: 'Roboto', sans-serif;
+  color: #0000FF; 
+  font-weight:bold;
+  font-size: 2em;
+  padding:10px;
+}
+  
+.container{
+  float:right; 
+}
+  
+.countdownContainer{
+  background-color: rgba(0, 0, 255, 0.31); 
+  border: 5px solid #0000FF;
+  display:block;
+  border-radius: 20px;
+  float:right;
+}
+  
+.countdownContainer p{
+  font-size:75px; 
+}
+  
+.eventContainer p{
+  font-size:25px; 
+  font-family: 'Roboto', sans-serif;
+  color: #0000FF; 
+}
+  
+.eventContainer{
+  background-color: rgba(0, 0, 255, 0.31);
+  border-radius: 20px;
+  height:0px; 
+  float:right;
+  border: 2px solid #0000FF;
+  visibility: hidden;
+}
