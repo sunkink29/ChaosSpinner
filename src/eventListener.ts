@@ -9,33 +9,25 @@ type Event = {
 };
 const eventQueue: Event[] = [];
 
-// deno-lint-ignore require-await
-export async function subListener(pathname: string[], searchParams: URLSearchParams) {
-  const user = searchParams.get('user')??'blank';
+export function subListener(user: string) {
   addEventToQueue({type: 'timer', user, time: config.subTime, amount: 1});
 }
 
-// deno-lint-ignore require-await
-export async function subGifedListener(pathname: string[], searchParams: URLSearchParams) {
-  const user = searchParams.get('user')??'blank';
+export function subGifedListener(user: string) {
   setTimeout(() => {
-    addEventToQueue({type: 'timer', user, time: config.subTime, amount: 1})
+    subListener(user);
   }, 1000);
 }
 
-// deno-lint-ignore require-await
-export async function massSubGiftedListener(pathname: string[], searchParams: URLSearchParams) {
-  const user = searchParams.get('user')??'blank';
-  const amountString = searchParams.get('amount')??'blank';
-  const amount = parseInt(amountString);
+export function massSubGiftedListener(user: string, amount: number) {
   addEventToQueue({type: 'mass', user, time: config.subTime, amount: amount})
 }
 
-export async function cheerListener(pathname: string[], searchParams: URLSearchParams) {
+export function cheerListener(user: string, amount: number) {
 
 }
 
-export async function tipListener(pathname: string[], searchParams: URLSearchParams) {
+export function tipListener(user: string, amount: number) {
 
 }
 

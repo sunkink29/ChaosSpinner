@@ -1,9 +1,9 @@
 import { config } from './config.ts';
 
 const files: {[key: string]:string} = {
-  ""          : "widgets/timer/index.html",
-  "style.css" : "widgets/timer/style.css",
-  "main.js"   : "widgets/timer/main.js"
+  ""          : "/index.html",
+  "style.css" : "/style.css",
+  "main.js"   : "/main.js"
 }
 
 let countDownTimer: number;
@@ -16,27 +16,14 @@ export function setTimerCallback(callback: (timerDisplay: string) => void) {
   timerCallback = callback;
 }
 
-export async function TimerListener(pathname: string[], searchParams: URLSearchParams): Promise<void | Response> {
-  const timerOption = searchParams.get('option');
+export function TimerListener(fileName: string, timerOption: string | null, amount: number): void | string {
   if (timerOption === null) {
-    let file;
-    try {
-      file = await Deno.open(files[pathname[1]], { read: true });
-    } catch {
-      // If the file cannot be opened, return a "404 Not Found" response
-      const notFoundResponse = new Response("404 Not Found", { status: 404 });
-      console.log(`Error: ${pathname[1]} could not be found for timer widget`)
-      return notFoundResponse
-    }
-    return new Response(file.readable);
-
+    return files[fileName];
   } else if (timerOption === 'start') {
     startTimer();
   } else if (timerOption === 'stop') {
     stopTimer();
   } else if (timerOption === 'add') {
-    const amountString = searchParams.get('amount')??'0'
-    const amount = parseInt(amountString);
     addTime(amount);
   } else if (timerOption === 'save') {
     saveTimer();
@@ -88,7 +75,7 @@ function displayTime() {
 }
 
 export function addTime(minutes: number) {
-  if (autoSaveId == 0) return   // don't allow time to be added before the inital is added to the timer
+  // if (autoSaveId == 0) return   // don't allow time to be added before the inital is added to the timer
 
   const milliseconds = minutes * 60000;
   countDownTimer += milliseconds;

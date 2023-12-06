@@ -1,25 +1,72 @@
+import { Application, Router } from "https://deno.land/x/oak@v12.6.1/mod.ts";
 import { setTimerCallback, TimerListener } from './timer.ts';
-import { subListener, subGifedListener, massSubGiftedListener, cheerListener, tipListener } from "./eventListener.ts";
+import { subListener, subGifedListener} from "./eventListener.ts";
 
 const commandPageSize = 100;
 const commands: {[key: string]: Command} = {};
 
+const app = new Application();
+const port = 8080;
+const router = new Router();
 
-type Route = {[key: string]: (pathname: string[], searchParams: URLSearchParams) => Promise<void | Response>}
-const routes: Route = {
-  'msg': msgListener,
-  'timer': TimerListener,
-  'sub': subListener,
-  'subGifed': subGifedListener,
-  'massSubGifted': massSubGiftedListener,
-  'cheer': cheerListener,
-  'tip': tipListener,
-}
+let timerConnected = false;
 
-// deno-lint-ignore require-await
-async function msgListener(_pathname: string[], searchParams: URLSearchParams) {
-  commands['Send Message'].send([searchParams.get('text')??'blank']);
-};
+// const routes: Route = {
+//   'msg': msgListener,
+//   'timer': TimerListener,
+//   'sub': subListener,
+//   'subGifed': subGifedListener,
+//   'massSubGifted': massSubGiftedListener,
+//   'cheer': cheerListener,
+//   'tip': tipListener,
+// }
+
+router.get('/msg',(ctx) => {
+  commands['Send Message'].send([ctx.request.url.searchParams.get('text')??'blank']);
+})
+router.get('/timer/start_websocket', (ctx) => {
+  const socket = ctx.upgrade();
+  if (timerConnected) {
+    socket.close(1008, 'Timer is already running');
+    return;
+  }
+
+  socket.onopen = () => {
+    if (!timerConnected) {
+      console.log('Timer Socket Conneted');
+      timerConnected = true;
+      setTimerCallback((timerDisplay: string) => socket.send(timerDisplay));
+    }
+  };
+
+  socket.onclose = () => {
+    if (timerConnected) {
+      console.log('Timer Socket disconnected');
+      timerConnected = false;
+      setTimerCallback((timerDisplay: string) => console.log(timerDisplay));
+    }
+  };
+})
+router.get('/timer/:file?', (ctx) => {
+  const url = ctx.request.url;
+  const filename = ctx?.params?.file ?? '';
+  const timerOption = url.searchParams.get('option');
+  const amountString = url.searchParams.get('amount')??'0';
+  const amount = parseInt(amountString);
+  const filePath = TimerListener(filename, timerOption, amount);
+  if (filePath) {
+    return ctx.send({root: `${Deno.cwd()}/widgets/timer`, path:filePath});
+  }
+})
+router.get('/sub', (ctx) => {
+  const user = ctx.request.url.searchParams.get('user') ?? 'Blank';
+  subListener(user);
+})
+router.get('/subGifted', (ctx) => {
+  const user = ctx.request.url.searchParams.get('user') ?? 'Blank';
+  subGifedListener(user);
+})
+
 
 class Command {
   id: string;
@@ -105,28 +152,6 @@ async function ensureMixItUpConnection() {
   }, 1000*60)
 }
 
-async function handleHttp(conn: Deno.Conn) {
-  const httpConn = Deno.serveHttp(conn);
-  for await (const requestEvent of httpConn) {
-    const url = new URL(requestEvent.request.url);
-    const pathname = url.pathname.split('/');
-    pathname.shift();
-    if (pathname[0] === 'favicon.ico') {
-      requestEvent.respondWith( new Response());
-      continue;
-    }
-
-    const route = routes[pathname[0]];
-    let response;
-    if (route) {
-      response = await route(pathname, url.searchParams);
-    } else {
-      console.error(`Could not find route ${url.pathname}`);
-    }
-    await requestEvent.respondWith(response ?? new Response())
-  }
-}
-
 setTimerCallback((timerDisplay: string) => console.log(timerDisplay));
 // setTimerCallback((timerDisplay: string) => commands['Send Message'].send([timerDisplay]))
 ensureMixItUpConnection().then(() => {
@@ -135,9 +160,10 @@ ensureMixItUpConnection().then(() => {
     // console.log(commands)
   });
 })
-const server = Deno.listen({ port: 8080 });
-console.log("Listening on http://localhost:8080/");
 
-for await (const conn of server) {
-  handleHttp(conn).catch(console.error);
-}
+
+app.use(router.routes());
+app.use(router.allowedMethods());
+
+console.log("Listening at http://localhost:" + port);
+await app.listen({ port });
