@@ -1,72 +1,17 @@
 import { Application, Router } from "https://deno.land/x/oak@v12.6.1/mod.ts";
-import { setTimerCallback, TimerListener } from './timer.ts';
-import { subListener, subGifedListener} from "./eventListener.ts";
+import { initalizeTimerRoutes, setTimerDisplayCallback, renderTime } from './timer.ts';
 
 const commandPageSize = 100;
 const commands: {[key: string]: Command} = {};
 
 const app = new Application();
-const port = 8080;
+const port = 29763;
 const router = new Router();
 
-let timerConnected = false;
-
-// const routes: Route = {
-//   'msg': msgListener,
-//   'timer': TimerListener,
-//   'sub': subListener,
-//   'subGifed': subGifedListener,
-//   'massSubGifted': massSubGiftedListener,
-//   'cheer': cheerListener,
-//   'tip': tipListener,
-// }
 
 router.get('/msg',(ctx) => {
   commands['Send Message'].send([ctx.request.url.searchParams.get('text')??'blank']);
 })
-router.get('/timer/start_websocket', (ctx) => {
-  const socket = ctx.upgrade();
-  if (timerConnected) {
-    socket.close(1008, 'Timer is already running');
-    return;
-  }
-
-  socket.onopen = () => {
-    if (!timerConnected) {
-      console.log('Timer Socket Conneted');
-      timerConnected = true;
-      setTimerCallback((timerDisplay: string) => socket.send(timerDisplay));
-    }
-  };
-
-  socket.onclose = () => {
-    if (timerConnected) {
-      console.log('Timer Socket disconnected');
-      timerConnected = false;
-      setTimerCallback((timerDisplay: string) => console.log(timerDisplay));
-    }
-  };
-})
-router.get('/timer/:file?', (ctx) => {
-  const url = ctx.request.url;
-  const filename = ctx?.params?.file ?? '';
-  const timerOption = url.searchParams.get('option');
-  const amountString = url.searchParams.get('amount')??'0';
-  const amount = parseInt(amountString);
-  const filePath = TimerListener(filename, timerOption, amount);
-  if (filePath) {
-    return ctx.send({root: `${Deno.cwd()}/widgets/timer`, path:filePath});
-  }
-})
-router.get('/sub', (ctx) => {
-  const user = ctx.request.url.searchParams.get('user') ?? 'Blank';
-  subListener(user);
-})
-router.get('/subGifted', (ctx) => {
-  const user = ctx.request.url.searchParams.get('user') ?? 'Blank';
-  subGifedListener(user);
-})
-
 
 class Command {
   id: string;
@@ -152,7 +97,8 @@ async function ensureMixItUpConnection() {
   }, 1000*60)
 }
 
-setTimerCallback((timerDisplay: string) => console.log(timerDisplay));
+initalizeTimerRoutes(router);
+setTimerDisplayCallback((time: number) => console.log(renderTime(time)));
 // setTimerCallback((timerDisplay: string) => commands['Send Message'].send([timerDisplay]))
 ensureMixItUpConnection().then(() => {
   getCommands().then(() => {
@@ -160,7 +106,6 @@ ensureMixItUpConnection().then(() => {
     // console.log(commands)
   });
 })
-
 
 app.use(router.routes());
 app.use(router.allowedMethods());

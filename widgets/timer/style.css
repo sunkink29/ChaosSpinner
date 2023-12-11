@@ -39,8 +39,6 @@ h1{
 .eventContainer{
   background-color: rgba(0, 0, 255, 0.31);
   border-radius: 20px;
-  height:0px; 
   float:right;
   border: 2px solid #0000FF;
-  visibility: hidden;
 }

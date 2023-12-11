@@ -22,8 +22,10 @@ const defaultConfig: Config = {
 export const config: Config = await readConfig();
 
 async function readConfig(): Promise<Config> {
-  const text = await Deno.readTextFile("./config.json");
-  if (!text) {
+  let text: string;
+  try {
+    text = await Deno.readTextFile("./config.json");
+  } catch {
     await Deno.writeTextFile("./config.json", JSON.stringify(defaultConfig));
     return defaultConfig;
   }
