@@ -1,10 +1,32 @@
 {
-  "subTime": 5,
-  "bitMinimum": 100,
-  "bitTime": 5,
-  "tipMinimum": 5,
-  "tipTime": 5,
-  "maxDuration": 300,
   "initialDuration": 1,
-  "timerAutoSaveFreq": 5
+  "timerAutoSaveFreq": 5,
+  "spinnerConfig": {
+    "wheel 1": {
+      "size": 412,
+      "innerRadius": 70,
+      "textSize": 20,
+      "pins": 30,
+      "duration": 3,
+      "spins": 5,
+      "wheelImage": "",
+      "segments": [
+        {"label":"Wheel1","color":"#ff0000","weight":1,"command": "spin","args": ["wheel 2", "$name"]},
+        {"label":"Wheel2","color":"#00ff00","weight":1,"command": "spin","args": ["wheel 3", "$name"]}
+      ]
+    },
+    "wheel 2": {
+      "size": 412,
+      "innerRadius": 70,
+      "textSize": 20,
+      "pins": 30,
+      "duration": 3,
+      "spins": 5,
+      "wheelImage": "",
+      "segments": [
+        {"label":"Wheel1","color":"#ff0000","weight":4,"command": "spin","args": ["wheel 2", "$name"]},
+        {"label":"Wheel2","color":"#00ff00","weight":1,"command": "spin","args": ["wheel 3", "$name"]}
+      ]
+    }
+  }
 }

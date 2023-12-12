@@ -1,0 +1,8 @@
+#wheelContainer {
+  background-image: url();
+  background-repeat: no-repeat;   /* Ensure that background does not repeat */
+  background-position: center;    /* Ensure image is centred */
+  background-size: contain;
+  width: 412px;                   /* Width and height should at least be the same as the canvas */
+  height: 412px;
+}

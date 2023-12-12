@@ -1,25 +1,31 @@
+import { Router } from "https://deno.land/x/oak@v12.6.1/mod.ts";
+import { Spinner, updateSpinnerConfigs } from "./spinner.ts";
+
 type Config = {
-  subTime: number,
-  bitMinimum: number,
-  bitTime: number,
-  tipMinimum: number,
-  tipTime: number,
-  maxDuration: number,
-  initialDuration: number,
-  timerAutoSaveFreq: number,
+  initialDuration: number
+  timerAutoSaveFreq: number
+  spinnerConfig: {[key: string]: Spinner}
 }
 
 const defaultConfig: Config = {
-  subTime: 5,
-  bitMinimum: 500,
-  bitTime: 5,
-  tipMinimum: 5,
-  tipTime: 5,
-  maxDuration: 400,
   initialDuration: 1,
   timerAutoSaveFreq: 5,
+  spinnerConfig: {
+    "wheel 1": {
+      "size": 412,
+      "innerRadius": 70,
+      "textSize": 20,
+      "pins": 30,
+      "duration": 3,
+      "spins": 5,
+      "wheelImage": "",
+      "segments": [
+        {"label":"Wheel1","color":"#ff0000","weight":1,"command": "spin","args": ["wheel 2", "$name"]},
+        {"label":"Wheel2","color":"#00ff00","weight":1,"command": "spin","args": ["wheel 3", "$name"]}
+      ]
+  }}
 }
-export const config: Config = await readConfig();
+export let config: Config = await readConfig();
 
 async function readConfig(): Promise<Config> {
   let text: string;
@@ -36,4 +42,16 @@ async function readConfig(): Promise<Config> {
     return defaultConfig;
   }
   return parsedText as Config;  // Make sure to check to make sure the config is correct
+}
+
+// deno-lint-ignore no-explicit-any
+export function initalizeConfigRoutes(router: Router<Record<string,any>>) {
+  router.get('/config/', async (ctx) => {
+    const option = ctx.request.url.searchParams.get('option')?? '';
+    if (option === 'update') {
+      config = await readConfig();
+      updateSpinnerConfigs();
+      console.log("Config updated");
+    }
+  });
 }

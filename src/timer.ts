@@ -43,7 +43,7 @@ export function initalizeTimerRoutes(router: Router<Record<string,any>>) {
   router.get('/timer/:file?', (ctx) => {
     const url = ctx.request.url;
     const filename = ctx?.params?.file ?? '';
-    const timerOption = url.searchParams.get('option');
+    const timerOption = url.searchParams.get('option')?? 'file';
     const amountString = url.searchParams.get('amount')??'0';
     const amount = parseInt(amountString) ?? 1;
     const message = url.searchParams.get('message')??'';
@@ -58,8 +58,8 @@ export function setTimerDisplayCallback(callback: (time: number) => void) {
   timerDisplayCallback = callback;
 }
 
-export function TimerListener(fileName: string, timerOption: string | null, amount: number, message: string): void | string {
-  if (timerOption === null) {
+export function TimerListener(fileName: string, timerOption: string, amount: number, message: string): void | string {
+  if (timerOption === 'file') {
     return files[fileName];
   } else if (timerOption === 'start') {
     startTimer();
