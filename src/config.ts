@@ -20,12 +20,13 @@ const defaultConfig: Config = {
       "spins": 5,
       "wheelImage": "",
       "segments": [
-        {"label":"Wheel1","color":"#ff0000","weight":1,"command": "spin","args": ["wheel 2", "$name"]},
-        {"label":"Wheel2","color":"#00ff00","weight":1,"command": "spin","args": ["wheel 3", "$name"]}
+        {"label":"Wheel1","color":"#ff0000","weight":1,"command": "spinner","args": ["spin" ,"wheel 2", "$name"]},
+        {"label":"Wheel2","color":"#00ff00","weight":1,"command": "spinner","args": ["spin" ,"wheel 3", "$name"]}
       ]
   }}
 }
 export let config: Config = await readConfig();
+export const configRouter = new Router();
 
 async function readConfig(): Promise<Config> {
   let text: string;
@@ -44,14 +45,11 @@ async function readConfig(): Promise<Config> {
   return parsedText as Config;  // Make sure to check to make sure the config is correct
 }
 
-// deno-lint-ignore no-explicit-any
-export function initalizeConfigRoutes(router: Router<Record<string,any>>) {
-  router.get('/config/', async (ctx) => {
-    const option = ctx.request.url.searchParams.get('option')?? '';
-    if (option === 'update') {
-      config = await readConfig();
-      updateSpinnerConfigs();
-      console.log("Config updated");
-    }
-  });
-}
+configRouter.get('/', async (ctx) => {
+  const option = ctx.request.url.searchParams.get('option')?? '';
+  if (option === 'update') {
+    config = await readConfig();
+    updateSpinnerConfigs();
+    console.log("Config updated");
+  }
+});

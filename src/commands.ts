@@ -2,23 +2,23 @@ const commandPageSize = 100;
 export const commands: {[key: string]: Command} = {};
 
 export class Command {
-  id: string;
-  name: string;
-  type: string;
-  isEnabled: boolean;
-  unlocked: boolean;
-  groupName: string;
-  sendFunc: (args: string[]) => Promise<void> | undefined;
+  id: string
+  name: string
+  type: string
+  isEnabled: boolean
+  unlocked: boolean
+  groupName: string
+  sendFunc: ((args: string[]) => Promise<void> | void) | undefined
 
   constructor(
     obj: {
-      ID: string; 
-      Name: string; 
-      Type: string;
-      IsEnabled: boolean;
-      Unlocked: boolean;
-      GroupName: string;
-      sendFunc: (args: string[]) => Promise<void> | undefined;
+      ID: string
+      Name: string 
+      Type: string
+      IsEnabled: boolean
+      Unlocked: boolean
+      GroupName: string
+      sendFunc: ((args: string[]) => Promise<void> | void) | undefined
     }
   ) {
     this.id = obj.ID;
@@ -68,7 +68,7 @@ export async function getCommands() {
     }
   }
   rawCommands.forEach(elem => {
-    commands[elem.Name] = new Command(elem)
+    commands[elem.Name] = new Command(elem);
   });
 }
 

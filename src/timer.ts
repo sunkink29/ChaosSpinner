@@ -1,11 +1,24 @@
 import { Router } from "https://deno.land/x/oak@v12.6.1/mod.ts";
 import { config } from './config.ts';
+import { addCommand, Command } from "./commands.ts";
 
 const files: {[key: string]:string} = {
   ""          : "/index.html",
   "style.css" : "/style.css",
   "main.js"   : "/main.js"
 }
+
+export const timerRouter = new Router();
+
+addCommand('timer', new Command({
+  ID: '',
+  Name: 'timer',
+  Type: 'custom',
+  IsEnabled: true,
+  Unlocked: false,
+  GroupName: '',
+  sendFunc: timerCommands
+}))
 
 let countDownTimer: number;
 let timerId = 0;
@@ -15,70 +28,70 @@ let timerDisplayCallback : (time: number) => void;
 
 let timerSocket: WebSocket | null = null;
 
-// deno-lint-ignore no-explicit-any
-export function initalizeTimerRoutes(router: Router<Record<string,any>>) {
-  router.get('/timer/websocket', (ctx) => {
-    if (timerSocket !== null) {
-      return;
-    }
-    const socket = ctx.upgrade();
-  
-    socket.onopen = () => {
-      console.log('Timer Socket Conneted');
-      timerSocket = socket;
-      setTimerDisplayCallback((time: number) => {
-        const event = {type: "time", time: time};
-        socket.send(JSON.stringify(event));
-      });
-      sendMessage('Widget Connected', 3);
-    };
-  
-    socket.onclose = () => {
-      console.log('Timer Socket disconnected');
-      timerSocket = null;
-      setTimerDisplayCallback((time: number) => console.log(renderTime(time)));
-    };
-  });
+timerRouter.get('/websocket', (ctx) => {
+  if (timerSocket) {
+    return;
+  }
+  const socket = ctx.upgrade();
 
-  router.get('/timer/:file?', (ctx) => {
-    const url = ctx.request.url;
-    const filename = ctx?.params?.file ?? '';
-    const timerOption = url.searchParams.get('option')?? 'file';
-    const amountString = url.searchParams.get('amount')??'0';
-    const amount = parseInt(amountString) ?? 1;
-    const message = url.searchParams.get('message')??'';
-    const filePath = TimerListener(filename, timerOption, amount, message);
-    if (filePath) {
-      return ctx.send({root: `${Deno.cwd()}/widgets/timer`, path:filePath});
-    }
-  });
-}
+  socket.onopen = () => {
+    console.log('Timer Socket Conneted');
+    timerSocket = socket;
+    setTimerDisplayCallback((time: number) => {
+      const event = {type: "time", time: time};
+      socket.send(JSON.stringify(event));
+    });
+    sendMessage('Widget Connected', 3);
+  };
+
+  socket.onclose = () => {
+    console.log('Timer Socket disconnected');
+    timerSocket = null;
+    setTimerDisplayCallback((time: number) => console.log(renderTime(time)));
+  };
+});
+
+timerRouter.get('/:file?', (ctx) => {
+  const url = ctx.request.url;
+  const option = url.searchParams.get('option');
+  const filename = ctx?.params?.file ?? '';
+  if (!option) {
+    const filePath = files[filename];
+    return ctx.send({root: `${Deno.cwd()}/widgets/timer`, path:filePath});
+  }
+  const amountString = url.searchParams.get('amount')??'0';
+  const message = url.searchParams.get('message')??'';
+  timerCommands([option, amountString, message]);
+});
 
 export function setTimerDisplayCallback(callback: (time: number) => void) {
   timerDisplayCallback = callback;
 }
 
-export function TimerListener(fileName: string, timerOption: string, amount: number, message: string): void | string {
-  if (timerOption === 'file') {
-    return files[fileName];
-  } else if (timerOption === 'start') {
+function timerCommands(args: string[]) {
+  const [option, amountString, message] = args;
+  const amount = parseInt(amountString)
+
+  if (option === 'start') {
     startTimer();
-  } else if (timerOption === 'stop') {
+  } else if (option === 'stop') {
     stopTimer();
-  } else if (timerOption === 'add') {
+  } else if (option === 'add') {
     addTime(amount);
-  } else if (timerOption === 'save') {
+  } else if (option === 'save') {
     saveTimer();
-  } else if (timerOption === 'load') {
+  } else if (option === 'load') {
     loadTimer();
-  } else if (timerOption === 'reset') {
+  } else if (option === 'reset') {
     resetTimer();
-  } else if (timerOption === 'message') {
+  } else if (option === 'message') {
     sendMessage(message, amount); 
+  } else if (option === 'disconnect') {
+    if (timerSocket) timerSocket.close();
   }
 }
 
-export function startTimer() {
+function startTimer() {
   if (timerId != 0 ) return;  // prevents two intervals from running at the same time
 
   if (autoSaveId == 0) startTimerAutoSave();
@@ -91,7 +104,7 @@ export function startTimer() {
   timerId = setInterval(() => updateTimeDisplay(), 1000);
 }
 
-export function stopTimer() {
+function stopTimer() {
   if (timerId == 0 ) return; // prevents stored time from being overwritten when timer is stopped
 
   const now = Date.now();
@@ -126,7 +139,7 @@ export function renderTime(time: number): string {
   return timerDisplay;
 }
 
-export function addTime(minutes: number) {
+function addTime(minutes: number) {
   // if (autoSaveId == 0) return   // don't allow time to be added before the inital is added to the timer
 
   const milliseconds = minutes * 60000;
@@ -135,7 +148,7 @@ export function addTime(minutes: number) {
   updateTimeDisplay();
 }
 
-export function saveTimer() {
+function saveTimer() {
   const oldTimerId = timerId; // store the id to prevent it from getting cleared to check if the timer needs to be started again
     stopTimer();
     const currentStoredTime = storedTime;
@@ -149,7 +162,7 @@ function startTimerAutoSave() {
   autoSaveId = setInterval(() => saveTimer(), 1000*60*config.timerAutoSaveFreq);
 }
 
-export function loadTimer() {
+function loadTimer() {
   Deno.readTextFile("./timer.txt").then((savedTimeText) => {
     const savedTime = parseInt(savedTimeText);
     storedTime = savedTime;
@@ -158,12 +171,12 @@ export function loadTimer() {
   });
 }
 
-export function resetTimer() {
+function resetTimer() {
   stopTimer();
   storedTime = 0;
 }
 
-export function sendMessage(message: string, amount: number) {
+function sendMessage(message: string, amount: number) {
   const event = {type: 'message', message, amount};
   timerSocket?.send(JSON.stringify(event));
 }
