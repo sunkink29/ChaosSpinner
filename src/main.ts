@@ -1,6 +1,6 @@
 import { Application, Router } from "https://deno.land/x/oak@v12.6.1/mod.ts";
-import { setTimerDisplayCallback, renderTime, timerRouter } from './timer.ts';
-import { getCommands, commands } from "./commands.ts";
+import { setTimerDisplayCallback, renderTimeString, timerRouter } from './timer.ts';
+import { getCommands, commands, RunCommandStringWithContext } from "./commands.ts";
 import { spinnerRouter } from "./spinner.ts";
 import { configRouter } from "./config.ts";
 
@@ -10,7 +10,7 @@ const router = new Router();
 
 
 router.get('/msg',(ctx) => {
-  commands['Send Message'].send([ctx.request.url.searchParams.get('text')??'blank']);
+  commands['Send Message'].send([ctx.request.url.searchParams.get('text')??'blank'], {});
 })
 
 
@@ -35,12 +35,13 @@ async function ensureMixItUpConnection() {
   }, 1000*60);
 }
 
-setTimerDisplayCallback((time: number) => console.log(renderTime(time)));
+setTimerDisplayCallback((time: number) => console.log(renderTimeString(time)));
 // setTimerCallback((timerDisplay: string) => commands['Send Message'].send([timerDisplay]))
 ensureMixItUpConnection().then(() => {
   getCommands().then(() => {
     // console.log(Object.keys(commands));
     // console.log(commands)
+    // RunCommandStringWithContext("run('Send Message', a-b); run('Send Message', a+b)", {a: '1', b: '2'})
   });
 })
 

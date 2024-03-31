@@ -1,6 +1,7 @@
 const socket = new WebSocket(`ws://localhost:29763/spinner/websocket?name=${name}`);
 
 let wheel;
+let currentContext = {};
 
 socket.onmessage = (m) => {
   const event = JSON.parse(m.data);
@@ -8,6 +9,7 @@ socket.onmessage = (m) => {
     updateConfig(event.config);
   } else if (event.type === "spin") {
     startSpin();
+    currentContext = event.context;
   }
 }
 
@@ -41,6 +43,7 @@ function updateConfig(config) {
       type: 'spinToStop',
       duration: config.duration,                         // Duration in seconds.
       spins: config.spins,                                // Default number of complete spins.
+      callbackFinished: 'spinFinished()'
      }
   });
   const loadedImg = new Image();
@@ -55,6 +58,14 @@ function startSpin() {
   wheel.rotationAngle = 0;
   wheel.stopAnimation(false);
   wheel.startAnimation();
+}
+
+function spinFinished() {
+  const message = {
+    result: wheel.getIndicatedSegmentNumber(),
+    context: currentContext,
+  };
+  socket.send(JSON.stringify(message));
 }
 
 const random_hex_color_code = () => {

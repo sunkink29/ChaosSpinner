@@ -1,6 +1,6 @@
 import { Router } from "https://deno.land/x/oak@v12.6.1/mod.ts";
 import { config } from "./config.ts";
-import { Command, addCommand } from "./commands.ts";
+import { Command, addCommand, RunCommandStringWithContext } from "./commands.ts";
 
 export type Spinner = {
   size: number
@@ -15,7 +15,6 @@ export type Spinner = {
     color: string
     weight: number
     command: string
-    args: string[]
   }[];
 }
 
@@ -67,6 +66,12 @@ spinnerRouter.get('/websocket', (ctx) => {
     console.log(`${name} (Spinner) Socket disconnected`);
     sockets[name] = undefined;
   };
+
+  socket.onmessage = (ev) => {
+    const message = JSON.parse(ev.data);
+    const command = config.spinnerConfig[name].segments[message.result-1].command;
+    RunCommandStringWithContext(command, message.context);
+  }
 });
 
 spinnerRouter.get('/:file?', async (ctx) => {
@@ -89,10 +94,11 @@ spinnerRouter.get('/:file?', async (ctx) => {
     const filePath = files[filename]
     return ctx.send({root: `${Deno.cwd()}/widgets/spinner`, path:filePath});
   }
-  spinnerCommands([option, name??''])
+  const context = Object.fromEntries(ctx.request.url.searchParams.entries());
+  spinnerCommands([option, name??''], context)
 });
 
-function spinnerCommands(args: string[]) {
+function spinnerCommands(args: string[], context?: {[k: string]: string}) {
   const [option, name] = args;
 
   if (!name){
@@ -107,7 +113,8 @@ function spinnerCommands(args: string[]) {
 
   if (option === 'spin') {
     const event = {
-      type: "spin"
+      type: "spin",
+      context,
     }
     sockets[newName]?.send(JSON.stringify(event));
   } else if (option === 'disconnect') {

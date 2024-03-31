@@ -47,7 +47,7 @@ timerRouter.get('/websocket', (ctx) => {
   socket.onclose = () => {
     console.log('Timer Socket disconnected');
     timerSocket = null;
-    setTimerDisplayCallback((time: number) => console.log(renderTime(time)));
+    setTimerDisplayCallback((time: number) => console.log(renderTimeString(time)));
   };
 });
 
@@ -104,20 +104,25 @@ function startTimer() {
   timerId = setInterval(() => updateTimeDisplay(), 1000);
 }
 
-function stopTimer() {
-  if (timerId == 0 ) return; // prevents stored time from being overwritten when timer is stopped
+function stopTimer(clear?: boolean) {
+  if (timerId == 0) return; // prevents stored time from being overwritten when timer is stopped
 
-  const now = Date.now();
-  storedTime = countDownTimer - now;
+  if (clear) {
+    storedTime = config.initialDuration * 1000 * 60 * 60;
+    timerDisplayCallback
+  } {
+    storedTime = countDownTimer - Date.now();
+  }
   clearInterval(timerId);
+  clearInterval(autoSaveId);
   timerId = 0;
+  autoSaveId = 0;
 }
 
 function updateTimeDisplay() {
-  const now = Date.now();
   let time;
   if (timerId != 0) {
-    time = countDownTimer - now;
+    time = countDownTimer - Date.now();
   } else {
     time = storedTime;
   }
@@ -130,13 +135,13 @@ function updateTimeDisplay() {
   }
 }
 
-export function renderTime(time: number): string {
+export function renderTimeString(time: number): string {
   const days = Math.floor(time / (1000 * 60 * 60 * 24));
   const hours = Math.floor((time % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
   const minutes = Math.floor((time % (1000 * 60 * 60)) / (1000 * 60));
   const seconds = Math.floor((time % (1000 * 60)) / 1000);
-  const timerDisplay = days + "d " + hours + "h " + minutes + "m " + seconds + "s";
-  return timerDisplay;
+  const timerString = days + "d " + hours + "h " + minutes + "m " + seconds + "s";
+  return timerString;
 }
 
 function addTime(minutes: number) {
@@ -149,13 +154,8 @@ function addTime(minutes: number) {
 }
 
 function saveTimer() {
-  const oldTimerId = timerId; // store the id to prevent it from getting cleared to check if the timer needs to be started again
-    stopTimer();
-    const currentStoredTime = storedTime;
-    if (oldTimerId != 0)
-      startTimer();
-
-    Deno.writeTextFile("./timer.txt", currentStoredTime.toString()).then();
+  const currentTime = countDownTimer - Date.now();
+  Deno.writeTextFile("./timer.txt", currentTime.toString()).then();
 }
 
 function startTimerAutoSave() {

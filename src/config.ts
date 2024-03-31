@@ -20,8 +20,8 @@ const defaultConfig: Config = {
       "spins": 5,
       "wheelImage": "",
       "segments": [
-        {"label":"Wheel1","color":"#ff0000","weight":1,"command": "spinner","args": ["spin" ,"wheel 2", "$name"]},
-        {"label":"Wheel2","color":"#00ff00","weight":1,"command": "spinner","args": ["spin" ,"wheel 3", "$name"]}
+        {"label":"Segment 1","color":"#ff0000","weight":1,"command": "run('timer', 'message', '8', 'Segment 1')"},
+        {"label":"Segment 2","color":"#00ff00","weight":1,"command": "run('timer', 'message', '8', 'Segment 2')"}
       ]
   }}
 }

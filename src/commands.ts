@@ -8,7 +8,7 @@ export class Command {
   isEnabled: boolean
   unlocked: boolean
   groupName: string
-  sendFunc: ((args: string[]) => Promise<void> | void) | undefined
+  sendFunc: ((args: string[], context?: {[k: string]: string}) => Promise<void> | void) | undefined
 
   constructor(
     obj: {
@@ -18,7 +18,7 @@ export class Command {
       IsEnabled: boolean
       Unlocked: boolean
       GroupName: string
-      sendFunc: ((args: string[]) => Promise<void> | void) | undefined
+      sendFunc: ((args: string[], context?: {[k: string]: string}) => Promise<void> | void) | undefined
     }
   ) {
     this.id = obj.ID;
@@ -30,9 +30,9 @@ export class Command {
     this.sendFunc = obj.sendFunc;
   };
 
-  send(args: string[]) {
+  send(args: string[], context?: {[k: string]: string}) {
     if (this.sendFunc !== undefined) {
-      this.sendFunc(args)?.then();
+      this.sendFunc(args, context)?.then();
       return;
     }
 
@@ -74,4 +74,25 @@ export async function getCommands() {
 
 export function addCommand(name: string, command: Command) {
   commands[name] = command;
+}
+
+export function RunCommandStringWithContext(commandString: string, context: {[k: string]: string}) {
+  // deno-lint-ignore no-explicit-any
+  function evalInScope(js: string, contextAsScope: any) {
+    return new Function(`with (this) { ${js}; }`).call(contextAsScope);
+  }
+
+  function runCommand(name: string, ...args: string[]) {
+    commands[name].send(args,context);
+  }
+
+  function changeContext(key: string, value: string) {
+    context[key] = value;
+  }
+
+  try {
+    evalInScope(commandString, {run: runCommand, context: changeContext, ...context})
+  } catch (error) {
+    console.log(error);
+  }
 }
